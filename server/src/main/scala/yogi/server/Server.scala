@@ -2,10 +2,13 @@ package yogi.server
 
 import akka.actor._
 import akka.io.IO
+import akka.pattern.ask
 
 import spray.can.Http
 import spray.http.{HttpResponse, ChunkedRequestStart, Uri, HttpRequest}
+
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration._
 
 
 class Server(interface: String, port: Int)(implicit val system: ActorSystem) {
@@ -15,28 +18,44 @@ class Server(interface: String, port: Int)(implicit val system: ActorSystem) {
   private[yogi] val routePaths: ListBuffer[RoutePath] = ListBuffer.empty
   private var handler: Option[ActorRef] = None
 
-
+  /**
+   * Adds a sub server contain to a path
+   *
+   * @param path the containing path
+   * @param subServer the sub server
+   */
   def addRoute(path: String, subServer: SubServer) {
     routePaths.prepend(RoutePath(path, subServer))
   }
 
+  /**
+   * Adds a sub server to the root
+   *
+   * @param subServer the sub server
+   */
   def addRoute(subServer: SubServer) {
     routePaths.append(RoutePath("", subServer))
   }
 
+  /**
+   * Starts the server
+   */
   def start() {
     val h = system.actorOf(Props(new ServerHandler(this)))
-    IO(Http) ! Http.Bind(h, interface = interface, port = port)
+    (IO(Http) ? Http.Bind(h, interface = interface, port = port))(akka.util.Timeout(10.seconds))
     handler = Some(h)
   }
 
+  /**
+   * Stops the server
+   */
   def stop() {
     handler.foreach(system.stop(_))
   }
 
 }
 
-class ServerHandler(server: Server) extends Actor {
+class ServerHandler[yogi](server: Server) extends Actor {
 
   def receive = {
     case _: Http.Connected => sender ! Http.Register(self)
@@ -73,13 +92,9 @@ class ServerHandler(server: Server) extends Actor {
     routePath match {
       case Some(a) =>
         val adjustedPath = path.replaceFirst(a.path, "")
-        a.subServer.handle(Request(method, adjustedPath, chunk, request, requestActor, context))
-      case _ => send404(requestActor)
+        a.subServer.route(Request(method, adjustedPath, chunk, request, requestActor, context))
+      case _ => requestActor ! HttpResponse(404)
     }
-  }
-
-  private def send404(client: ActorRef) {
-    client ! HttpResponse(404)
   }
 
 }

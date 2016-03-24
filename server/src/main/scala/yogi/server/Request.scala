@@ -2,6 +2,9 @@ package yogi.server
 
 import akka.actor.{Actor, Props, ActorContext, ActorRef}
 
+import org.scalatra.MultiParams
+import org.scalatra.util.MultiMap
+
 import spray.can.Http.RegisterChunkHandler
 import spray.http._
 
@@ -9,7 +12,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{Promise, Future}
 
 
-case class Request(method: HttpMethod, path: String, chunkStart: Option[ChunkedRequestStart], sprayRequest: HttpRequest, sender: ActorRef, context: ActorContext) {
+case class Request(method: HttpMethod, path: String, chunkStart: Option[ChunkedRequestStart], sprayRequest: HttpRequest, sender: ActorRef, context: ActorContext, params: MultiParams = MultiMap(Map.empty)) {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 

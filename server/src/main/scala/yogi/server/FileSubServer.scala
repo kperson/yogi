@@ -7,7 +7,7 @@ import org.apache.commons.io.IOUtils
 import spray.http.MediaTypes._
 import spray.http.{HttpEntity, ContentType, MediaType, HttpResponse}
 
-
+// A subserver that serves data from the filesystem
 class FileSubServer(rootDirectory: File, index: Option[String] = Some("index.html"), cache: Boolean = false, mimeMap: Map[String, String] = FileSubServer.defaultMimeMap) extends SubServer {
 
   private val fileCache = scala.collection.mutable.Map[String, Array[Byte]]()
@@ -26,7 +26,6 @@ class FileSubServer(rootDirectory: File, index: Option[String] = Some("index.htm
   private def resolveContentType(resourcePath: String) : Option[String] = mimeMap.get(suffix(resourcePath))
 
   private def suffix(path: String): String = path.reverse.takeWhile(_ != '.').reverse
-
 
   private def fetch(path: String): Option[Array[Byte]] = {
     val target = new File(rootDirectory, path)
@@ -168,14 +167,6 @@ object FileSubServer {
       "ods" -> "application/vnd.oasis.opendocument.spreadsheet",
       "odt" -> "application/vnd.oasis.opendocument.text",
       "ogg" -> "application/ogg",
-      "otc" -> "application/vnd.oasis.opendocument.chart-template",
-      "otf" -> "application/vnd.oasis.opendocument.formula-template",
-      "otg" -> "application/vnd.oasis.opendocument.graphics-template",
-      "oth" -> "application/vnd.oasis.opendocument.text-web",
-      "oti" -> "application/vnd.oasis.opendocument.image-template",
-      "otp" -> "application/vnd.oasis.opendocument.presentation-template",
-      "ots" -> "application/vnd.oasis.opendocument.spreadsheet-template",
-      "ott" -> "application/vnd.oasis.opendocument.text-template",
       "pbm" -> "image/x-portable-bitmap",
       "pdb" -> "chemical/x-pdb",
       "pdf" -> "application/pdf",
@@ -231,7 +222,8 @@ object FileSubServer {
       "tiff" -> "image/tiff",
       "tr" -> "application/x-troff",
       "tsv" -> "text/tab-separated-values",
-      "txt" -> "text/plain; charset=\"UTF-8",
+      "txt" -> "text/plain",
+      "text" -> "text/plain",
       "ustar" -> "application/x-ustar",
       "vcd" -> "application/x-cdlink",
       "vrml" -> "model/vrml",
@@ -258,8 +250,12 @@ object FileSubServer {
       "xyz" -> "chemical/x-xyz",
       "z" -> "application/compress",
       "zip" -> "application/zip",
-      "tff" -> "application/font-sfnt"
-      )
+      "tff" -> "application/font-sfnt",
+      "ttf" -> "application/x-font-ttf",
+      "otf" -> "application/x-font-opentype",
+      "woff" -> "application/font-woff",
+      "woff2" -> "application/font-woff2"
+  )
 
 
 }
