@@ -4,9 +4,7 @@ import akka.actor._
 import akka.io.IO
 
 import spray.can.Http
-import spray.http.HttpMethods._
 import spray.http.{HttpResponse, ChunkedRequestStart, Uri, HttpRequest}
-
 import scala.collection.mutable.ListBuffer
 
 
@@ -42,30 +40,30 @@ class ServerHandler(server: Server) extends Actor {
 
   def receive = {
     case _: Http.Connected => sender ! Http.Register(self)
-    case req@HttpRequest(GET, Uri.Path(path), _, _, _) =>
-      handlerRequest(GETRequest, None, req, path, sender)
-    case req@HttpRequest(POST, Uri.Path(path), _, _, _) =>
-      handlerRequest(POSTRequest, None, req, path, sender)
-    case req@HttpRequest(PATCH, Uri.Path(path), _, _, _) =>
-      handlerRequest(PATCHRequest, None, req, path, sender)
-    case req@HttpRequest(DELETE, Uri.Path(path), _, _, _) =>
-      handlerRequest(DELETERequest, None, req, path, sender)
-    case req@HttpRequest(PUT, Uri.Path(path), _, _, _) =>
-      handlerRequest(PUTRequest, None, req, path, sender)
-    case req@HttpRequest(OPTIONS, Uri.Path(path), _, _, _) =>
-      handlerRequest(OPTIONSRequest, None, req, path, sender)
+    case req@HttpRequest(spray.http.HttpMethods.GET, Uri.Path(path), _, _, _) =>
+      handlerRequest(yogi.server.GET, None, req, path, sender)
+    case req@HttpRequest(spray.http.HttpMethods.POST, Uri.Path(path), _, _, _) =>
+      handlerRequest(yogi.server.POST, None, req, path, sender)
+    case req@HttpRequest(spray.http.HttpMethods.PATCH, Uri.Path(path), _, _, _) =>
+      handlerRequest(yogi.server.PATCH, None, req, path, sender)
+    case req@HttpRequest(spray.http.HttpMethods.DELETE, Uri.Path(path), _, _, _) =>
+      handlerRequest(yogi.server.DELETE, None, req, path, sender)
+    case req@HttpRequest(spray.http.HttpMethods.PUT, Uri.Path(path), _, _, _) =>
+      handlerRequest(yogi.server.PUT, None, req, path, sender)
+    case req@HttpRequest(spray.http.HttpMethods.OPTIONS, Uri.Path(path), _, _, _) =>
+      handlerRequest(yogi.server.OPTIONS, None, req, path, sender)
     case chunk@ChunkedRequestStart(r) =>
       r match {
-        case req@HttpRequest(POST, Uri.Path(path), _, _, _) =>
-          handlerRequest(POSTRequest, Some(chunk), req, path, sender)
-        case req@HttpRequest(PATCH, Uri.Path(path), _, _, _) =>
-          handlerRequest(PATCHRequest, Some(chunk), req, path, sender)
-        case req@HttpRequest(DELETE, Uri.Path(path), _, _, _) =>
-          handlerRequest(DELETERequest, Some(chunk), req, path, sender)
-        case req@HttpRequest(PUT, Uri.Path(path), _, _, _) =>
-          handlerRequest(PUTRequest, Some(chunk), req, path, sender)
-        case req@HttpRequest(OPTIONS, Uri.Path(path), _, _, _) =>
-          handlerRequest(OPTIONSRequest, Some(chunk), req, path, sender)
+        case req@HttpRequest(spray.http.HttpMethods.POST, Uri.Path(path), _, _, _) =>
+          handlerRequest(yogi.server.POST, Some(chunk), req, path, sender)
+        case req@HttpRequest(spray.http.HttpMethods.PATCH, Uri.Path(path), _, _, _) =>
+          handlerRequest(yogi.server.PATCH, Some(chunk), req, path, sender)
+        case req@HttpRequest(spray.http.HttpMethods.DELETE, Uri.Path(path), _, _, _) =>
+          handlerRequest(yogi.server.DELETE, Some(chunk), req, path, sender)
+        case req@HttpRequest(spray.http.HttpMethods.PUT, Uri.Path(path), _, _, _) =>
+          handlerRequest(yogi.server.PUT, Some(chunk), req, path, sender)
+        case req@HttpRequest(spray.http.HttpMethods.OPTIONS, Uri.Path(path), _, _, _) =>
+          handlerRequest(yogi.server.OPTIONS, Some(chunk), req, path, sender)
       }
   }
 

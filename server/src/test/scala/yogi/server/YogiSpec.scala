@@ -22,12 +22,12 @@ trait YogiSpec extends FlatSpec with ScalaFutures with Matchers {
 
   def echoHandler(request: Request) {
     val methodName = request.method match {
-      case GETRequest => "GET"
-      case POSTRequest => "POST"
-      case PUTRequest => "PUT"
-      case DELETERequest => "DELETE"
-      case PATCHRequest => "PATCH"
-      case OPTIONSRequest => "OPTIONS"
+      case GET => "GET"
+      case POST => "POST"
+      case PUT => "PUT"
+      case DELETE => "DELETE"
+      case PATCH => "PATCH"
+      case OPTIONS => "OPTIONS"
     }
     request.bodyAsBytes.onSuccess {
       case fetchedBytes =>

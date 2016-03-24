@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import yogi.client.Request._
 
 
-class HttpSpec extends YogiSpec with ScalaFutures {
+class RequestSpec extends YogiSpec with ScalaFutures {
 
   it should "submit a GET request" in withServer { (server, baseURL) =>
     val sub = new SubServer()

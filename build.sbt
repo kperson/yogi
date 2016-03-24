@@ -20,6 +20,7 @@ lazy val server = (project in file("server")).
     "com.typesafe.akka"     %% "akka-actor"    % "2.3.13",
     "io.spray"              %% "spray-can"     % "1.3.3",
     "org.scalatra"          %% "scalatra"      % "2.4.0",
+    "commons-io"            %  "commons-io"    % "2.4",
     "org.scalatest"         %% "scalatest"     %  scalaTestVersion % "test"
 
 )).dependsOn(client % "test->compile")

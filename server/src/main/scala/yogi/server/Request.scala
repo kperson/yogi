@@ -13,6 +13,10 @@ case class Request(method: HttpMethod, path: String, chunkStart: Option[ChunkedR
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
+  def header(name: String) : Option[String] = {
+    sprayRequest.headers.find(_.lowercaseName == name.toLowerCase).map(_.value)
+  }
+
   def bodyAsBytes: Future[Array[Byte]] = {
     val promise = Promise[Array[Byte]]()
     chunkStart match {

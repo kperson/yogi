@@ -13,27 +13,27 @@ class SubServer {
   private val handlers: scala.collection.mutable.Map[HttpMethod, ListBuffer[PathHandler]] = scala.collection.mutable.Map.empty
 
   def get(path: String)(handler: (Request) => Unit) {
-    addHandler(path, handler, GETRequest)
+    addHandler(path, handler, yogi.server.GET)
   }
 
   def post(path: String)(handler: (Request) => Unit) {
-    addHandler(path, handler, POSTRequest)
+    addHandler(path, handler, yogi.server.POST)
   }
 
   def delete(path: String)(handler: (Request) => Unit) {
-    addHandler(path, handler, DELETERequest)
+    addHandler(path, handler, yogi.server.DELETE)
   }
 
   def put(path: String)(handler: (Request) => Unit) {
-    addHandler(path, handler, PUTRequest)
+    addHandler(path, handler, yogi.server.PUT)
   }
 
   def patch(path: String)(handler: (Request) => Unit) {
-    addHandler(path, handler, PATCHRequest)
+    addHandler(path, handler, yogi.server.PATCH)
   }
 
   def options(path: String)(handler: (Request) => Unit) {
-    addHandler(path, handler, OPTIONSRequest)
+    addHandler(path, handler, yogi.server.OPTIONS)
   }
 
   def handle(request: Request) {
