@@ -11,18 +11,20 @@ import yogi.client.Request._
 class RequestSpec extends YogiSpec with ScalaFutures {
 
   it should "submit a GET request" in withServer { (server, baseURL) =>
+    implicit val m = server.materializer
     val sub = new ServerPath()
-    sub.get("/apple").raw(echoHandler)
+    sub.get("/apple").async(echoHandler)
     server.addRoute("/test", sub)
     val req = yogi.client.Request.get(s"${baseURL}/test/apple")
     whenReady(req, 1.second) { res =>
-      res.responseBody should be(echo("GET", "/apple", ""))
+      res.responseBody should be(echo("GET", "/test/apple", ""))
     }
   }
 
   it should "submit a POST request" in withServer { (server, baseURL) =>
+    implicit val m = server.materializer
     val sub = new ServerPath()
-    sub.post("/apple").raw(echoHandler)
+    sub.post("/apple").async(echoHandler)
     server.addRoute(sub)
     val req = yogi.client.Request.post(s"${baseURL}/apple", body = "hello".getBytes)
     whenReady(req, 1.second) { res =>
@@ -31,8 +33,9 @@ class RequestSpec extends YogiSpec with ScalaFutures {
   }
 
   it should "submit a DELETE request" in withServer { (server, baseURL) =>
+    implicit val m = server.materializer
     val sub = new ServerPath()
-    sub.delete("/apple").raw(echoHandler)
+    sub.delete("/apple").async(echoHandler)
     server.addRoute(sub)
     val req = yogi.client.Request.delete(s"${baseURL}/apple", body = "hello".getBytes)
     whenReady(req, 1.second) { res =>
@@ -41,8 +44,9 @@ class RequestSpec extends YogiSpec with ScalaFutures {
   }
 
   it should "submit a PUT request" in withServer { (server, baseURL) =>
+    implicit val m = server.materializer
     val sub = new ServerPath()
-    sub.put("/apple").raw(echoHandler)
+    sub.put("/apple").async(echoHandler)
     server.addRoute(sub)
     val req = yogi.client.Request.put(s"${baseURL}/apple", body = "hello".getBytes)
     whenReady(req, 1.second) { res =>
@@ -51,8 +55,9 @@ class RequestSpec extends YogiSpec with ScalaFutures {
   }
 
   it should "submit an OPTIONS request" in withServer { (server, baseURL) =>
+    implicit val m = server.materializer
     val sub = new ServerPath()
-    sub.options("/apple").raw(echoHandler)
+    sub.options("/apple").async(echoHandler)
     server.addRoute(sub)
     val req = yogi.client.Request.options(s"${baseURL}/apple")
     whenReady(req, 1.second) { res =>
@@ -61,8 +66,9 @@ class RequestSpec extends YogiSpec with ScalaFutures {
   }
 
   it should "submit an PATCH request" in withServer { (server, baseURL) =>
+    implicit val m = server.materializer
     val sub = new ServerPath()
-    sub.patch("/apple").raw(echoHandler)
+    sub.patch("/apple").async(echoHandler)
     server.addRoute(sub)
     val req = yogi.client.Request.patch(s"${baseURL}/apple")
     whenReady(req, 1.second) { res =>

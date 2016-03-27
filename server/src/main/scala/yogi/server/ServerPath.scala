@@ -1,7 +1,10 @@
 package yogi.server
 
-import org.scalatra.{PathPattern, SinatraPathPatternParser}
-import spray.http.HttpResponse
+import akka.http.scaladsl.model.{HttpMethod, HttpResponse, HttpRequest}
+import akka.http.scaladsl.model.HttpMethods._
+import akka.stream.Materializer
+
+import org.scalatra.{MultiParams, PathPattern, SinatraPathPatternParser}
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
@@ -9,45 +12,29 @@ import scala.concurrent.Future
 
 sealed trait RequestHandler
 
-case class Async(handler: (Request) => Future[HttpResponse]) extends RequestHandler
-case class Sync(handler: (Request) => HttpResponse) extends RequestHandler
-case class Raw(handler: (Request) => Any) extends RequestHandler
+case class Async(handler: (HttpRequest, MultiParams) => Future[HttpResponse]) extends RequestHandler
+case class Sync(handler: (HttpRequest, MultiParams) => HttpResponse) extends RequestHandler
 
 
 class HandlerSelector(path: String) {
 
-  private var requestHandler:RequestHandler = Raw((a) => Unit)
+  private var requestHandler:RequestHandler = Sync((a, b) => HttpResponse(404))
   val pathPattern: PathPattern = SinatraPathPatternParser(path)
 
-  def async(handler: (Request) => Future[HttpResponse]) {
+  def async(handler: (HttpRequest, MultiParams) => Future[HttpResponse]) {
     requestHandler = Async(handler)
   }
 
-  def sync(handler: (Request) => HttpResponse) {
+  def sync(handler: (HttpRequest, MultiParams) => HttpResponse) {
     requestHandler = Sync(handler)
   }
 
-  def raw(handler: (Request) => Any) {
-    requestHandler = Raw(handler)
-  }
 
-  def handle(request: Request) {
-    import request.context.dispatcher
+  def handle(request: HttpRequest, params: MultiParams) : Future[HttpResponse] = {
+
     requestHandler match {
-      case Async(h) =>
-        val gather = h(request)
-        gather.onSuccess {
-          case res => request.sender ! res
-        }
-        gather.onFailure {
-          case ex =>
-            System.err.print("context fetch failed")
-            println(ex.getMessage)
-            ex.printStackTrace()
-            request.sender ! HttpResponse(500)
-        }
-      case Sync(h) => request.sender ! h(request)
-      case Raw(h) => h(request)
+      case Async(h) => h(request, params)
+      case Sync(h) =>  Future.successful(h(request, params))
     }
   }
 
@@ -55,7 +42,7 @@ class HandlerSelector(path: String) {
 
 
 // A component of a server, contained to a path
-class ServerPath {
+class ServerPath()(implicit val materializer:Materializer) {
 
   private val handlers: scala.collection.mutable.Map[HttpMethod, ListBuffer[HandlerSelector]] = scala.collection.mutable.Map.empty
   
@@ -66,7 +53,7 @@ class ServerPath {
    */
   def get(path: String): HandlerSelector = {
     val selector = new HandlerSelector(path)
-    addHandler(path, selector, yogi.server.GET)
+    addHandler(path, selector, GET)
     selector
   }
 
@@ -77,7 +64,7 @@ class ServerPath {
    */
   def post(path: String): HandlerSelector = {
     val selector = new HandlerSelector(path)
-    addHandler(path, selector, yogi.server.POST)
+    addHandler(path, selector, POST)
     selector
   }
 
@@ -88,7 +75,7 @@ class ServerPath {
    */
   def delete(path: String) : HandlerSelector = {
     val selector = new HandlerSelector(path)
-    addHandler(path, selector, yogi.server.DELETE)
+    addHandler(path, selector, DELETE)
     selector
   }
 
@@ -99,7 +86,7 @@ class ServerPath {
    */
   def put(path: String) : HandlerSelector = {
     val selector = new HandlerSelector(path)
-    addHandler(path, selector, yogi.server.PUT)
+    addHandler(path, selector, PUT)
     selector
   }
 
@@ -110,7 +97,7 @@ class ServerPath {
    */
   def patch(path: String) : HandlerSelector = {
     val selector = new HandlerSelector(path)
-    addHandler(path, selector, yogi.server.PATCH)
+    addHandler(path, selector, PATCH)
     selector
   }
 
@@ -121,7 +108,7 @@ class ServerPath {
    */
   def options(path: String) : HandlerSelector = {
     val selector = new HandlerSelector(path)
-    addHandler(path, selector, yogi.server.OPTIONS)
+    addHandler(path, selector, OPTIONS)
     selector
   }
 
@@ -130,18 +117,17 @@ class ServerPath {
    * Route an incoming request
    * @param request a request
    */
-  def route(request: Request) {
+  def route(request: HttpRequest, adjustedPath: String) : Future[HttpResponse] = {
 
     val methodHandlers = handlers.get(request.method).getOrElse(ListBuffer.empty)
     val methodAndParams = methodHandlers.flatMap { x =>
-      val multiParams = x.pathPattern(request.path)
+      val multiParams = x.pathPattern(adjustedPath)
       multiParams.map(a => (x, a))
     }.headOption
     methodAndParams match {
       case Some((handler, params)) =>
-        val req = request.copy(params = params)
-        handler.handle(req)
-      case _ =>  request.sender ! HttpResponse(404)
+        handler.handle(request, params)
+      case _ =>  Future.successful(HttpResponse(404))
     }
   }
 

@@ -10,17 +10,16 @@ lazy val commonSettings = Seq(
 lazy val client = (project in file("client")).
   settings(commonSettings: _*).
   settings(libraryDependencies ++= Seq(
-    "net.databinder.dispatch" %% "dispatch-core" % "0.11.3",
-    "org.scalatest"           %% "scalatest"     %  scalaTestVersion % "test"
+    "net.databinder.dispatch" %% "dispatch-core"    % "0.11.3",
+    "org.scalatest"           %% "scalatest"        %  scalaTestVersion % "test"
 ))
 
 lazy val server = (project in file("server")).
   settings(commonSettings: _*).
   settings(libraryDependencies ++= Seq(
-    "com.typesafe.akka"     %% "akka-actor"    % "2.3.13",
-    "io.spray"              %% "spray-can"     % "1.3.3",
-    "org.scalatra"          %% "scalatra"      % "2.4.0",
-    "commons-io"            %  "commons-io"    % "2.4",
-    "org.scalatest"         %% "scalatest"     %  scalaTestVersion % "test"
+    "com.typesafe.akka"       %% "akka-http-core"   % "2.4.2",
+    "org.scalatra"            %% "scalatra"         % "2.4.0",
+    "commons-io"              %  "commons-io"       % "2.4",
+    "org.scalatest"           %% "scalatest"        %  scalaTestVersion % "test"
 
 )).dependsOn(client % "test->compile")

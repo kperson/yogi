@@ -8,9 +8,10 @@ import scala.concurrent.duration._
 
 import yogi.client.Request._
 
-class FileSubServerSpec extends YogiSpec {
+class FileServerPathSpec extends YogiSpec {
 
   it should "fetch a file" in withServer { (server, baseURL) =>
+    implicit val m = server.materializer
     val staticDirectory = new File(getClass.getResource("/static-test").getFile)
     val sub = new FileServerPath(staticDirectory)
     server.addRoute(sub)
@@ -22,6 +23,7 @@ class FileSubServerSpec extends YogiSpec {
   }
 
   it should "default to index" in withServer { (server, baseURL) =>
+    implicit val m = server.materializer
     val staticDirectory = new File(getClass.getResource("/static-test").getFile)
     val sub = new FileServerPath(staticDirectory)
     server.addRoute(sub)
@@ -33,6 +35,7 @@ class FileSubServerSpec extends YogiSpec {
   }
 
   it should "default 404 if a file does not exist" in withServer { (server, baseURL) =>
+    implicit val m = server.materializer
     val staticDirectory = new File(getClass.getResource("/static-test").getFile)
     val sub = new FileServerPath(staticDirectory)
     server.addRoute(sub)
@@ -43,6 +46,7 @@ class FileSubServerSpec extends YogiSpec {
   }
 
   it should "default 404 if a directory index does not exist" in withServer { (server, baseURL) =>
+    implicit val m = server.materializer
     val staticDirectory = new File(getClass.getResource("/static-test").getFile)
     val sub = new FileServerPath(staticDirectory)
     server.addRoute(sub)

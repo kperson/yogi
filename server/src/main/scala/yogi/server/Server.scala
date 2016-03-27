@@ -1,22 +1,22 @@
 package yogi.server
 
 import akka.actor._
-import akka.io.IO
-import akka.pattern.ask
-
-import spray.can.Http
-import spray.http.{HttpResponse, ChunkedRequestStart, Uri, HttpRequest}
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
+import akka.stream.Materializer
+import akka.stream.scaladsl.Sink
+import akka.http.scaladsl.model.HttpMethods._
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.duration._
+import scala.concurrent.Future
 
 
-class Server(interface: String, port: Int)(implicit val system: ActorSystem) {
+class Server(interface: String, port: Int)(implicit val system: ActorSystem, val materializer:Materializer) {
 
   case class RoutePath(path: String, subServer: ServerPath)
 
   private[yogi] val routePaths: ListBuffer[RoutePath] = ListBuffer.empty
-  private var handler: Option[ActorRef] = None
+  val serverHandler = new ServerHandler(this)
 
   /**
    * Adds a sub server contain to a path
@@ -40,60 +40,42 @@ class Server(interface: String, port: Int)(implicit val system: ActorSystem) {
   /**
    * Starts the server
    */
-  def start() {
-    val h = system.actorOf(Props(new ServerHandler(this)))
-    (IO(Http) ? Http.Bind(h, interface = interface, port = port))(akka.util.Timeout(10.seconds))
-    handler = Some(h)
-  }
-
-  /**
-   * Stops the server
-   */
-  def stop() {
-    handler.foreach(system.stop(_))
+  def start(): Future[Http.ServerBinding] =  {
+    val serverSource = Http().bind(interface = interface, port = port)
+    serverSource.to(Sink.foreach { connection =>
+      connection.handleWithAsyncHandler(serverHandler.receive)
+    }).run()
   }
 
 }
 
-class ServerHandler[yogi](server: Server) extends Actor {
+class ServerHandler[yogi](server: Server) {
 
-  def receive = {
-    case _: Http.Connected => sender ! Http.Register(self)
-    case req@HttpRequest(spray.http.HttpMethods.GET, Uri.Path(path), _, _, _) =>
-      handlerRequest(yogi.server.GET, None, req, path, sender)
-    case req@HttpRequest(spray.http.HttpMethods.POST, Uri.Path(path), _, _, _) =>
-      handlerRequest(yogi.server.POST, None, req, path, sender)
-    case req@HttpRequest(spray.http.HttpMethods.PATCH, Uri.Path(path), _, _, _) =>
-      handlerRequest(yogi.server.PATCH, None, req, path, sender)
-    case req@HttpRequest(spray.http.HttpMethods.DELETE, Uri.Path(path), _, _, _) =>
-      handlerRequest(yogi.server.DELETE, None, req, path, sender)
-    case req@HttpRequest(spray.http.HttpMethods.PUT, Uri.Path(path), _, _, _) =>
-      handlerRequest(yogi.server.PUT, None, req, path, sender)
-    case req@HttpRequest(spray.http.HttpMethods.OPTIONS, Uri.Path(path), _, _, _) =>
-      handlerRequest(yogi.server.OPTIONS, None, req, path, sender)
-    case chunk@ChunkedRequestStart(r) =>
-      r match {
-        case req@HttpRequest(spray.http.HttpMethods.POST, Uri.Path(path), _, _, _) =>
-          handlerRequest(yogi.server.POST, Some(chunk), req, path, sender)
-        case req@HttpRequest(spray.http.HttpMethods.PATCH, Uri.Path(path), _, _, _) =>
-          handlerRequest(yogi.server.PATCH, Some(chunk), req, path, sender)
-        case req@HttpRequest(spray.http.HttpMethods.DELETE, Uri.Path(path), _, _, _) =>
-          handlerRequest(yogi.server.DELETE, Some(chunk), req, path, sender)
-        case req@HttpRequest(spray.http.HttpMethods.PUT, Uri.Path(path), _, _, _) =>
-          handlerRequest(yogi.server.PUT, Some(chunk), req, path, sender)
-        case req@HttpRequest(spray.http.HttpMethods.OPTIONS, Uri.Path(path), _, _, _) =>
-          handlerRequest(yogi.server.OPTIONS, Some(chunk), req, path, sender)
-      }
+  def receive(request: HttpRequest) : Future[HttpResponse] = {
+    request match {
+      case req@HttpRequest(GET, Uri.Path(path), _, _, _) =>
+        handlerRequest(req)
+      case req@HttpRequest(POST, Uri.Path(path), _, _, _) =>
+        handlerRequest(req)
+      case req@HttpRequest(PATCH, Uri.Path(path), _, _, _) =>
+        handlerRequest(req)
+      case req@HttpRequest(DELETE, Uri.Path(path), _, _, _) =>
+        handlerRequest(req)
+      case req@HttpRequest(PUT, Uri.Path(path), _, _, _) =>
+        handlerRequest(req)
+      case req@HttpRequest(OPTIONS, Uri.Path(path), _, _, _) =>
+        handlerRequest(req)
+    }
   }
 
-  def handlerRequest(method: HttpMethod, chunk: Option[ChunkedRequestStart], request: HttpRequest, path: String, requestActor: ActorRef) {
-    Request(method, path, chunk, request, requestActor, context)
+  def handlerRequest(request: HttpRequest): Future[HttpResponse] = {
+    val path = request.getUri.path
     val routePath = server.routePaths.find { rp => path.startsWith(rp.path) }
     routePath match {
       case Some(a) =>
         val adjustedPath = path.replaceFirst(a.path, "")
-        a.subServer.route(Request(method, adjustedPath, chunk, request, requestActor, context))
-      case _ => requestActor ! HttpResponse(404)
+        a.subServer.route(request, adjustedPath)
+      case _ => Future.successful(HttpResponse(404))
     }
   }
 

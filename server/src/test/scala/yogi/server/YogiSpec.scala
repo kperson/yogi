@@ -1,26 +1,30 @@
 package yogi.server
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.{HttpResponse, HttpRequest}
+import akka.http.scaladsl.model.HttpMethods._
 
 import java.net.ServerSocket
 
+import akka.stream.{Materializer, ActorMaterializer}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Span}
 import org.scalatest.{FlatSpec, Matchers}
+import org.scalatra.MultiParams
 
-import spray.http.HttpResponse
-
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 import scala.util.Random
-import scala.concurrent.ExecutionContext.Implicits.global
 
 
 trait YogiSpec extends FlatSpec with ScalaFutures with Matchers {
 
   val r = new Random(31)
 
-  def echoHandler(request: Request) {
+  def echoHandler(request: HttpRequest, params: MultiParams)(implicit materializer:Materializer) : Future[HttpResponse] = {
+
+    import materializer.executionContext
     val methodName = request.method match {
       case GET => "GET"
       case POST => "POST"
@@ -29,10 +33,7 @@ trait YogiSpec extends FlatSpec with ScalaFutures with Matchers {
       case PATCH => "PATCH"
       case OPTIONS => "OPTIONS"
     }
-    request.body.futureAsStr.onSuccess {
-      case str =>
-        request.sender ! HttpResponse(200, echo(methodName, request.path, str))
-    }
+    request.body.futureAsStr.map { str => HttpResponse(200, entity = echo(methodName, request.path, str)) }
 
   }
 
@@ -42,14 +43,16 @@ trait YogiSpec extends FlatSpec with ScalaFutures with Matchers {
 
   def withServer(testCode: (Server, String) => Any): Unit = {
     implicit val system = ActorSystem(r.nextInt(1000000).toString)
+    implicit val materializer = ActorMaterializer()
     val socket = new ServerSocket(0)
     val openPort = socket.getLocalPort
     socket.close()
     val server = new Server("localhost", openPort)
-    server.start()
-    Thread.sleep(500)
+    val bindFetch = server.start()
+
+    val bind = Await.result(bindFetch, 3.seconds)
     testCode(server, s"http://localhost:${openPort}")
-    server.stop()
+    bind.unbind()
     system.shutdown()
   }
 
