@@ -1,7 +1,7 @@
 lazy val scalaTestVersion = "2.2.6"
 
 lazy val commonSettings = Seq(
-  organization := "yogi",
+  organization := "com.kelt",
   version := "1.0",
   scalaVersion := "2.11.7",
   parallelExecution in Test := false

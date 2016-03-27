@@ -29,9 +29,9 @@ trait YogiSpec extends FlatSpec with ScalaFutures with Matchers {
       case PATCH => "PATCH"
       case OPTIONS => "OPTIONS"
     }
-    request.bodyAsBytes.onSuccess {
-      case fetchedBytes =>
-        request.sender ! HttpResponse(200, echo(methodName, request.path, new String(fetchedBytes)))
+    request.body.futureAsStr.onSuccess {
+      case str =>
+        request.sender ! HttpResponse(200, echo(methodName, request.path, str))
     }
 
   }

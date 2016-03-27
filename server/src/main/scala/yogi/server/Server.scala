@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 
 class Server(interface: String, port: Int)(implicit val system: ActorSystem) {
 
-  case class RoutePath(path: String, subServer: SubServer)
+  case class RoutePath(path: String, subServer: ServerPath)
 
   private[yogi] val routePaths: ListBuffer[RoutePath] = ListBuffer.empty
   private var handler: Option[ActorRef] = None
@@ -24,8 +24,8 @@ class Server(interface: String, port: Int)(implicit val system: ActorSystem) {
    * @param path the containing path
    * @param subServer the sub server
    */
-  def addRoute(path: String, subServer: SubServer) {
-    routePaths.prepend(RoutePath(path, subServer))
+  def addRoute(path: String, subServer: ServerPath) {
+    routePaths.append(RoutePath(path, subServer))
   }
 
   /**
@@ -33,7 +33,7 @@ class Server(interface: String, port: Int)(implicit val system: ActorSystem) {
    *
    * @param subServer the sub server
    */
-  def addRoute(subServer: SubServer) {
+  def addRoute(subServer: ServerPath) {
     routePaths.append(RoutePath("", subServer))
   }
 

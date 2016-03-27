@@ -8,18 +8,18 @@ import spray.http.MediaTypes._
 import spray.http.{HttpEntity, ContentType, MediaType, HttpResponse}
 
 // A subserver that serves data from the filesystem
-class FileSubServer(rootDirectory: File, index: Option[String] = Some("index.html"), cache: Boolean = false, mimeMap: Map[String, String] = FileSubServer.defaultMimeMap) extends SubServer {
+class FileServerPath(rootDirectory: File, index: Option[String] = Some("index.html"), cache: Boolean = false, mimeMap: Map[String, String] = FileServerPath.defaultMimeMap) extends ServerPath {
 
   private val fileCache = scala.collection.mutable.Map[String, Array[Byte]]()
 
-  get("/*") { req =>
+  get("/*").sync { req =>
     val adjustedPath = req.path.substring(1, req.path.length)
     fetch(adjustedPath) match {
       case Some(bytes) =>
         val mediaType = resolveContentType(adjustedPath).map(MediaType.custom(_)).getOrElse(`application/octet-stream`)
         val contentType = ContentType(mediaType)
-        req.sender ! HttpResponse(entity = HttpEntity(contentType, bytes), status = 200)
-      case _ => req.sender ! HttpResponse(404)
+        HttpResponse(entity = HttpEntity(contentType, bytes), status = 200)
+      case _ => HttpResponse(404)
     }
   }
 
@@ -71,7 +71,7 @@ class FileSubServer(rootDirectory: File, index: Option[String] = Some("index.htm
 }
 
 
-object FileSubServer {
+object FileServerPath {
 
   lazy val defaultMimeMap:Map[String, String] =
     Map(

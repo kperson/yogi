@@ -11,16 +11,11 @@ import spray.http._
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{Promise, Future}
 
+case class Body(chunkStart: Option[ChunkedRequestStart], context: ActorContext, sender: ActorRef, sprayRequest: HttpRequest) {
 
-case class Request(method: HttpMethod, path: String, chunkStart: Option[ChunkedRequestStart], sprayRequest: HttpRequest, sender: ActorRef, context: ActorContext, params: MultiParams = MultiMap(Map.empty)) {
+  import context.dispatcher
 
-  import scala.concurrent.ExecutionContext.Implicits.global
-
-  def header(name: String) : Option[String] = {
-    sprayRequest.headers.find(_.lowercaseName == name.toLowerCase).map(_.value)
-  }
-
-  def bodyAsBytes: Future[Array[Byte]] = {
+  def futureAsBytes: Future[Array[Byte]] = {
     val promise = Promise[Array[Byte]]()
     chunkStart match {
       case Some(start) =>
@@ -33,19 +28,30 @@ case class Request(method: HttpMethod, path: String, chunkStart: Option[ChunkedR
     promise.future
   }
 
-  def bodyAsString: Future[String] = bodyAsString.map(new String(_))
+  def futureAsStr: Future[String] = futureAsBytes.map(new String(_))
 
-  private class ByteReader(promise: Promise[Array[Byte]]) extends Actor {
+  def bodyAsStream: Stream[Byte] = sprayRequest.asPartStream().flatMap {
+    case c: MessageChunk => Some(c.data.toByteArray)
+    case _ => None
+  }.flatten
+}
+case class Request(method: HttpMethod, path: String, chunkStart: Option[ChunkedRequestStart], sprayRequest: HttpRequest, sender: ActorRef, context: ActorContext, params: MultiParams = MultiMap(Map.empty)) {
 
-    var buffer = ArrayBuffer[Byte]()
+  def header(name: String) : Option[String] = sprayRequest.headers.find(_.lowercaseName == name.toLowerCase).map(_.value)
 
-    def receive = {
-      case c: MessageChunk =>
-        c.data.toByteArray.foreach(buffer.append(_))
-      case e: ChunkedMessageEnd =>
-        promise.success(buffer.toArray)
-    }
+  def body = Body(chunkStart, context, sender, sprayRequest)
 
+}
+
+class ByteReader(promise: Promise[Array[Byte]]) extends Actor {
+
+  var buffer = ArrayBuffer[Byte]()
+
+  def receive = {
+    case c: MessageChunk =>
+      c.data.toByteArray.foreach(buffer.append(_))
+    case e: ChunkedMessageEnd =>
+      promise.success(buffer.toArray)
   }
 
 }
