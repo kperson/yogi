@@ -1,16 +1,17 @@
 package yogi.server
 
-import java.io.{InputStreamReader, FileInputStream, File}
 
 import akka.http.scaladsl.model._
-import akka.stream.Materializer
+
+import java.io.{InputStreamReader, FileInputStream, File}
+
 import org.apache.commons.io.IOUtils
 
 
 case class CachedFile(encoding: String, mediaType: MediaType, bytes: Array[Byte])
 
 // A server path that serves data from the filesystem
-class FileServerPath(rootDirectory: File, index: Option[String] = Some("index.html"), cache: Boolean = false)(implicit val m:Materializer) extends ServerPath {
+class FileServerPath(rootDirectory: File, index: Option[String] = Some("index.html"), cache: Boolean = false) extends ServerPath {
 
   private val fileCache = scala.collection.mutable.Map[String, CachedFile]()
 

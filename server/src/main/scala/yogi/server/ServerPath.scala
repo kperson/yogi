@@ -42,7 +42,7 @@ class HandlerSelector(path: String) {
 
 
 // A component of a server, contained to a path
-class ServerPath()(implicit val materializer:Materializer) {
+class ServerPath {
 
   private val handlers: scala.collection.mutable.Map[HttpMethod, ListBuffer[HandlerSelector]] = scala.collection.mutable.Map.empty
   

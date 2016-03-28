@@ -1,6 +1,5 @@
 package yogi.server
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream.Materializer
 

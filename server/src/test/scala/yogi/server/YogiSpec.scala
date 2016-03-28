@@ -50,7 +50,7 @@ trait YogiSpec extends FlatSpec with ScalaFutures with Matchers {
     val server = new Server("localhost", openPort)
     val bindFetch = server.start()
 
-    val bind = Await.result(bindFetch, 3.seconds)
+    val bind = Await.result(bindFetch, 5.seconds)
     testCode(server, s"http://localhost:${openPort}")
     bind.unbind()
     system.shutdown()
