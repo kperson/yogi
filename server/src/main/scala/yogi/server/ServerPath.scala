@@ -2,7 +2,6 @@ package yogi.server
 
 import akka.http.scaladsl.model.{HttpMethod, HttpResponse, HttpRequest}
 import akka.http.scaladsl.model.HttpMethods._
-import akka.stream.Materializer
 
 import org.scalatra.{MultiParams, PathPattern, SinatraPathPatternParser}
 
@@ -18,7 +17,7 @@ case class Sync(handler: (HttpRequest, MultiParams) => HttpResponse) extends Req
 
 class HandlerSelector(path: String) {
 
-  private var requestHandler:RequestHandler = Sync((a, b) => HttpResponse(404))
+  protected var requestHandler:RequestHandler = Sync((a, b) => HttpResponse(404))
   val pathPattern: PathPattern = SinatraPathPatternParser(path)
 
   def async(handler: (HttpRequest, MultiParams) => Future[HttpResponse]) {
@@ -131,7 +130,7 @@ class ServerPath {
     }
   }
 
-  private def addHandler(path: String, handler: HandlerSelector, method: HttpMethod) {
+  protected def addHandler(path: String, handler: HandlerSelector, method: HttpMethod) {
     handlers.get(method) match {
       case Some(l) => l.append(handler)
       case _ =>

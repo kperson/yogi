@@ -34,12 +34,7 @@ class FileServerPath(rootDirectory: File, index: Option[String] = Some("index.ht
         index match {
           case Some(i) =>
             val f = new File(target, i)
-            if(f.exists && f.isFile) {
-              Some(read(f, path))
-            }
-            else {
-              None
-            }
+            if(f.exists && f.isFile) Some(read(f, path)) else None
           case _ => None
         }
       }
