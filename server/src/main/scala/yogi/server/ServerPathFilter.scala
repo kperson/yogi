@@ -1,7 +1,7 @@
 package yogi.server
 
-import _root_.akka.http.scaladsl.model.HttpMethods._
-import _root_.akka.http.scaladsl.model.{HttpRequest, HttpMethod, HttpResponse}
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.{HttpRequest, HttpMethod, HttpResponse}
 import org.scalatra._
 
 import scala.concurrent.{ExecutionContext, Future}

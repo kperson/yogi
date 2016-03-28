@@ -3,12 +3,12 @@ package yogi.server
 
 import akka.http.scaladsl.model._
 
-import java.io.{InputStreamReader, FileInputStream, File}
+import java.io.{FileInputStream, File}
 
 import org.apache.commons.io.IOUtils
 
 
-case class CachedFile(encoding: String, mediaType: MediaType, bytes: Array[Byte])
+case class CachedFile( mediaType: MediaType, bytes: Array[Byte])
 
 // A server path that serves data from the filesystem
 class FileServerPath(rootDirectory: File, index: Option[String] = Some("index.html"), cache: Boolean = false) extends ServerPath {
@@ -19,7 +19,7 @@ class FileServerPath(rootDirectory: File, index: Option[String] = Some("index.ht
     val adjustedPath = params("splat").mkString(File.separator)
     fetch(adjustedPath) match {
       case Some(data) =>
-        val contentType = ContentType(data.mediaType, () => HttpCharset.custom(data.encoding))
+        val contentType = ContentType(data.mediaType, () => HttpCharsets.`UTF-8`)
         HttpResponse(entity = HttpEntity(contentType, data.bytes), status = 200)
       case _ => HttpResponse(404)
     }
@@ -50,11 +50,9 @@ class FileServerPath(rootDirectory: File, index: Option[String] = Some("index.ht
   private def read(file: File, targetPath: String, checkCache: Boolean = cache) : CachedFile = {
     if(!checkCache) {
       val is = new FileInputStream(file)
-      val r =  new InputStreamReader(is)
-      val encoding = r.getEncoding
-      val bytes = IOUtils.toByteArray(r)
+      val bytes = IOUtils.toByteArray(is)
       val mediaType = MediaTypes.forExtension(suffix(file.getAbsolutePath))
-      val cached = CachedFile(encoding, mediaType, bytes)
+      val cached = CachedFile(mediaType, bytes)
       if(cache){
         fileCache.put(file.getAbsolutePath, cached)
       }

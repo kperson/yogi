@@ -23,3 +23,7 @@ lazy val server = (project in file("server")).
     "org.scalatest"           %% "scalatest"        %  scalaTestVersion % "test"
 
 )).dependsOn(client % "test->compile")
+
+lazy val demo = (project in file("demo")).
+  settings(commonSettings: _*).
+  dependsOn(server)
