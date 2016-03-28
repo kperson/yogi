@@ -15,7 +15,7 @@ class FileServerPath(rootDirectory: File, index: Option[String] = Some("index.ht
 
   private val fileCache = scala.collection.mutable.Map[String, CachedFile]()
 
-  get("/*").sync { (req, params) =>
+  get("*").sync { (req, params) =>
     val adjustedPath = params("splat").mkString(File.separator)
     fetch(adjustedPath) match {
       case Some(data) =>
