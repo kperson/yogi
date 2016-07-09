@@ -9,6 +9,7 @@ import akka.http.scaladsl.model.HttpMethods._
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 
 object Server {
@@ -25,8 +26,7 @@ class Server(interface: String, port: Int, recovery: PartialFunction[Throwable, 
 
   private[yogi] val routePaths: ListBuffer[RoutePath] = ListBuffer.empty
 
-  import materializer.executionContext
-  val serverHandler = new ServerHandler(this, recovery)
+  val serverHandler = new ServerHandler(this, recovery)(materializer.executionContext)
 
   /**
    * Adds a sub server contain to a path
@@ -51,10 +51,10 @@ class Server(interface: String, port: Int, recovery: PartialFunction[Throwable, 
    * Starts the server
    */
   def start(): Future[Http.ServerBinding] =  {
-    val serverSource = Http().bind(interface = interface, port = port)
+    val serverSource = Http().bind(interface = interface, port = port)(materializer)
     serverSource.to(Sink.foreach { connection =>
       connection.handleWithAsyncHandler(serverHandler.receive)
-    }).run()
+    }).run()(materializer)
   }
 
 }
@@ -84,11 +84,9 @@ class ServerHandler[yogi](server: Server, recovery: PartialFunction[Throwable, F
     routePath match {
       case Some(a) =>
         val adjustedPath = path.replaceFirst(a.path, "")
-        try {
-          a.subServer.route(request, adjustedPath).recoverWith(recovery)
-        }
-        catch {
-          case t: Throwable => recovery(t)
+        Try(a.subServer.route(request, adjustedPath).recoverWith(recovery)) match {
+          case Success(a) => a
+          case Failure(t) => recovery(t)
         }
       case _ => Future.successful(HttpResponse(404))
     }
