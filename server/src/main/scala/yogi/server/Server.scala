@@ -8,15 +8,25 @@ import akka.stream.scaladsl.Sink
 import akka.http.scaladsl.model.HttpMethods._
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 
-class Server(interface: String, port: Int)(implicit val system: ActorSystem, val materializer:Materializer) {
+object Server {
+
+  def defaultRecovery:PartialFunction[Throwable, Future[HttpResponse]] = {
+    case _ => Future.successful(HttpResponse(500))
+  }
+
+}
+
+class Server(interface: String, port: Int, recovery: PartialFunction[Throwable, Future[HttpResponse]] = Server.defaultRecovery)(implicit val system: ActorSystem, val materializer:Materializer) {
 
   case class RoutePath(path: String, subServer: ServerPath)
 
   private[yogi] val routePaths: ListBuffer[RoutePath] = ListBuffer.empty
-  val serverHandler = new ServerHandler(this)
+
+  import materializer.executionContext
+  val serverHandler = new ServerHandler(this, recovery)
 
   /**
    * Adds a sub server contain to a path
@@ -49,7 +59,7 @@ class Server(interface: String, port: Int)(implicit val system: ActorSystem, val
 
 }
 
-class ServerHandler[yogi](server: Server) {
+class ServerHandler[yogi](server: Server, recovery: PartialFunction[Throwable, Future[HttpResponse]])(implicit ec: ExecutionContext) {
 
   def receive(request: HttpRequest) : Future[HttpResponse] = {
     request match {
@@ -74,7 +84,12 @@ class ServerHandler[yogi](server: Server) {
     routePath match {
       case Some(a) =>
         val adjustedPath = path.replaceFirst(a.path, "")
-        a.subServer.route(request, adjustedPath)
+        try {
+          a.subServer.route(request, adjustedPath).recoverWith(recovery)
+        }
+        catch {
+          case t: Throwable => recovery(t)
+        }
       case _ => Future.successful(HttpResponse(404))
     }
   }

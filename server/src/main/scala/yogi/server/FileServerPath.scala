@@ -14,7 +14,7 @@ class FileServerPath(rootDirectory: File, index: Option[String] = Some("index.ht
 
 
   get("*").sync { (req, params) =>
-    val path = params("splat").head.split("/").mkString(File.separator)
+    val path = params("splat").headOption.getOrElse("/").split("/").mkString(File.separator)
     val adjustedPath = if(path.startsWith("/")) path.substring(1, path.length) else path
     fetch(adjustedPath) match {
       case Some(data) =>

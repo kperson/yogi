@@ -2,6 +2,7 @@ package yogi.server
 
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream.Materializer
+import akka.stream.scaladsl.Source
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
@@ -24,6 +25,8 @@ case class Body(request: HttpRequest)(implicit materializer:Materializer)  {
 
   def futureAsBytes: Future[Array[Byte]] = {
     val buffer = ArrayBuffer[Byte]()
+    request.entity.dataBytes
+    Source
     val fetch = request.entity.dataBytes.runForeach { a => buffer.appendAll(a.toArray) }
     fetch.map { _ => buffer.toArray }
   }
