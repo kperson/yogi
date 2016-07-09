@@ -6,9 +6,7 @@ package object server extends Request {
 
   implicit class MultiParamsExtensions(self: MultiParams) {
 
-    def one(str: String): String = {
-      self(str).head
-    }
+    def one(str: String): String = self(str).head
 
   }
 

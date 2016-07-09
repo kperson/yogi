@@ -21,16 +21,13 @@ trait Request {
 
 case class Body(request: HttpRequest)(implicit materializer:Materializer)  {
 
-  import materializer.executionContext
-
   def futureAsBytes: Future[Array[Byte]] = {
     val buffer = ArrayBuffer[Byte]()
     request.entity.dataBytes
-    Source
     val fetch = request.entity.dataBytes.runForeach { a => buffer.appendAll(a.toArray) }
-    fetch.map { _ => buffer.toArray }
+    fetch.map { _ => buffer.toArray }(materializer.executionContext)
   }
 
-  def futureAsStr: Future[String] = futureAsBytes.map(new String(_))
+  def futureAsStr: Future[String] = futureAsBytes.map(new String(_))(materializer.executionContext)
 
 }

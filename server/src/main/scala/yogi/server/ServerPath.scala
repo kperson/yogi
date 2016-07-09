@@ -126,11 +126,7 @@ class ServerPath {
     }.headOption
     methodAndParams match {
       case Some((handler, params)) =>
-        val x = Uri.parse(request.getUri().toString).query.paramMap
-        var finalParams = params
-        x.foreach { case (k, l) =>
-          finalParams = finalParams + ((k, l))
-        }
+        val finalParams = params ++ Uri.parse(request.getUri().toString).query.paramMap
         handler.handle(request, finalParams)
       case _ =>  Future.successful(HttpResponse(404))
     }

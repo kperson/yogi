@@ -24,7 +24,6 @@ trait YogiSpec extends FlatSpec with ScalaFutures with Matchers {
 
   def echoHandler(request: HttpRequest, params: MultiParams)(implicit materializer:Materializer) : Future[HttpResponse] = {
 
-    import materializer.executionContext
     val methodName = request.method match {
       case GET => "GET"
       case POST => "POST"
@@ -33,7 +32,7 @@ trait YogiSpec extends FlatSpec with ScalaFutures with Matchers {
       case PATCH => "PATCH"
       case OPTIONS => "OPTIONS"
     }
-    request.body.futureAsStr.map { str => HttpResponse(200, entity = echo(methodName, request.path, str)) }
+    request.body.futureAsStr.map { str => HttpResponse(200, entity = echo(methodName, request.path, str)) }(materializer.executionContext)
 
   }
 
