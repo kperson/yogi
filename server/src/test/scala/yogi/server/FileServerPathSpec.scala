@@ -36,16 +36,17 @@ class FileServerPathSpec extends YogiSpec {
     }
   }
 
+
   it should "default 404 if a file does not exist" in withStaticServer { (server, baseURL, staticDirectory) =>
-    val req = yogi.client.Request.get(s"${baseURL}/world.txt")
-    whenReady(req, 1.second) { res =>
+    val fileReq = yogi.client.Request.get(s"${baseURL}/world.txt")
+    whenReady(fileReq, 1.second) { res =>
       res.statusCode should be (404)
     }
   }
 
   it should "default 404 if a directory index does not exist" in withStaticServer { (server, baseURL, staticDirectory) =>
-    val req = yogi.client.Request.get(s"${baseURL}/dir")
-    whenReady(req, 1.second) { res =>
+    val dirReq = yogi.client.Request.get(s"${baseURL}/dir")
+    whenReady(dirReq, 1.second) { res =>
       res.statusCode should be (404)
     }
   }
