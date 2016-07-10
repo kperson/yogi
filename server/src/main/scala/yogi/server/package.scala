@@ -10,7 +10,8 @@ package object server extends Request {
      * Gets a single parameter from query string
      * @param str
      */
-    def one(str: String): String = self(str).head
+    def one(str: String): String = self(str).headOption.getOrElse("")
+
 
   }
 

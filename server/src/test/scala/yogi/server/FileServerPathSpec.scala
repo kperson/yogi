@@ -10,11 +10,17 @@ import yogi.client.Request._
 
 class FileServerPathSpec extends YogiSpec {
 
-  it should "fetch a file" in withServer { (server, baseURL) =>
-    implicit val m = server.materializer
-    val staticDirectory = new File(getClass.getResource("/static-test").getFile)
-    val sub = new FileServerPath(staticDirectory)
-    server.addRoute(sub)
+  def withStaticServer(testCode: (Server, String, File) => Any) {
+    withServer { (server, baseURL) =>
+      implicit val m = server.materializer
+      val staticDirectory = new File(getClass.getResource("/static-test").getFile)
+      val sub = new FileServerPath(staticDirectory)
+      server.addRoute(sub)
+      testCode(server, baseURL, staticDirectory)
+    }
+  }
+
+  it should "fetch a file" in withStaticServer { (server, baseURL, staticDirectory) =>
     val req = yogi.client.Request.get(s"${baseURL}/hello.txt")
     whenReady(req, 1.second) { res =>
       val helloContent = IOUtils.toByteArray(new FileInputStream(new File(staticDirectory, "hello.txt")))
@@ -22,11 +28,7 @@ class FileServerPathSpec extends YogiSpec {
     }
   }
 
-  it should "default to index" in withServer { (server, baseURL) =>
-    implicit val m = server.materializer
-    val staticDirectory = new File(getClass.getResource("/static-test").getFile)
-    val sub = new FileServerPath(staticDirectory)
-    server.addRoute(sub)
+  it should "default to index" in withStaticServer { (server, baseURL, staticDirectory) =>
     val req = yogi.client.Request.get(s"${baseURL}")
     whenReady(req, 1.second) { res =>
       val helloContent = IOUtils.toByteArray(new FileInputStream(new File(staticDirectory, "index.html")))
@@ -34,22 +36,14 @@ class FileServerPathSpec extends YogiSpec {
     }
   }
 
-  it should "default 404 if a file does not exist" in withServer { (server, baseURL) =>
-    implicit val m = server.materializer
-    val staticDirectory = new File(getClass.getResource("/static-test").getFile)
-    val sub = new FileServerPath(staticDirectory)
-    server.addRoute(sub)
+  it should "default 404 if a file does not exist" in withStaticServer { (server, baseURL, staticDirectory) =>
     val req = yogi.client.Request.get(s"${baseURL}/world.txt")
     whenReady(req, 1.second) { res =>
       res.statusCode should be (404)
     }
   }
 
-  it should "default 404 if a directory index does not exist" in withServer { (server, baseURL) =>
-    implicit val m = server.materializer
-    val staticDirectory = new File(getClass.getResource("/static-test").getFile)
-    val sub = new FileServerPath(staticDirectory)
-    server.addRoute(sub)
+  it should "default 404 if a directory index does not exist" in withStaticServer { (server, baseURL, staticDirectory) =>
     val req = yogi.client.Request.get(s"${baseURL}/dir")
     whenReady(req, 1.second) { res =>
       res.statusCode should be (404)
