@@ -19,17 +19,33 @@ case class Sync(handler: (HttpRequest, MultiParams) => HttpResponse) extends Req
 
 class HandlerSelector(path: String) {
 
-  private[yogi] var requestHandler:RequestHandler = Sync((a, b) => HttpResponse(404))
+  private var requestHandler:RequestHandler = Sync((a, b) => HttpResponse(404))
   val pathPattern: PathPattern = SinatraPathPatternParser(path)
 
+  /**
+   * Handles a request asynchronously
+   *
+   * @param handler handler for request that take the request and parameters
+   */
   def async(handler: (HttpRequest, MultiParams) => Future[HttpResponse]) {
     requestHandler = Async(handler)
   }
 
+  /**
+   * Handles a request synchronously
+   *
+   * @param handler handler for request that take the request and parameters
+   */
   def sync(handler: (HttpRequest, MultiParams) => HttpResponse) {
     requestHandler = Sync(handler)
   }
 
+  /**
+   * Handles the request
+   *
+   * @param request the request
+   * @param params thre request parameters
+   */
   def handle(request: HttpRequest, params: MultiParams) : Future[HttpResponse] = {
 
     requestHandler match {
@@ -115,6 +131,7 @@ class ServerPath {
 
   /**
    * Route an incoming request
+   *
    * @param request a request
    */
   def route(request: HttpRequest, adjustedPath: String) : Future[HttpResponse] = {

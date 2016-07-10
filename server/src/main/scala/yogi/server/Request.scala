@@ -16,11 +16,13 @@ trait Request {
     def path: String = self.uri.path.toString
 
   }
-
 }
 
 case class Body(request: HttpRequest)(implicit materializer:Materializer)  {
 
+  /**
+   * Reads the bytes from the request body
+   */
   def futureAsBytes: Future[Array[Byte]] = {
     val buffer = ArrayBuffer[Byte]()
     request.entity.dataBytes
@@ -28,6 +30,9 @@ case class Body(request: HttpRequest)(implicit materializer:Materializer)  {
     fetch.map { _ => buffer.toArray }(materializer.executionContext)
   }
 
+  /**
+   * Reads the request body as a string
+   */
   def futureAsStr: Future[String] = futureAsBytes.map(new String(_))(materializer.executionContext)
 
 }
