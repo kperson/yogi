@@ -1,22 +1,12 @@
 package yogi.server
 
-import akka.http.scaladsl.model.HttpRequest
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
+import akka.http.scaladsl.model.HttpRequest
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 
-
-trait Request {
-
-  implicit class RequestExtensions(self: HttpRequest) {
-
-    def body(implicit materializer:Materializer): Body = Body(self)
-    def path: String = self.uri.path.toString
-
-  }
-}
 
 case class Body(request: HttpRequest)(implicit materializer:Materializer)  {
 
