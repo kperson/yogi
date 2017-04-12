@@ -79,7 +79,7 @@ class ServerHandler[yogi](server: Server, recovery: PartialFunction[Throwable, F
   }
 
   def handlerRequest(request: HttpRequest): Future[HttpResponse] = {
-    val path = request.getUri.path
+    val path = if (request.getUri.path.startsWith("//")) request.getUri.path.substring(1, request.getUri.path.length) else request.getUri.path 
     val routePath = server.routePaths.find { rp => path.startsWith(rp.path) }
     routePath match {
       case Some(a) =>
